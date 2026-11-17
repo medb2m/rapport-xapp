@@ -26,3 +26,4 @@ _apercu/
 
 # Le PDF compilé n'est pas versionné (à publier en release si besoin)
 main.pdf
+~$* 
