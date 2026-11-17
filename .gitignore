@@ -1,0 +1,28 @@
+# Fichiers générés par LaTeX
+*.aux
+*.log
+*.out
+*.toc
+*.lof
+*.lot
+*.bbl
+*.bcf
+*.blg
+*.run.xml
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.glo
+*.gls
+*.glg
+*.acn
+*.acr
+*.alg
+*.ist
+*.xdy
+
+# Contrôle visuel local
+_apercu/
+
+# Le PDF compilé n'est pas versionné (à publier en release si besoin)
+main.pdf

@@ -1,0 +1,125 @@
+\chapter{Sprint 1 : socle, comptes et contrôle d'accès}
+
+\section{Introduction}
+Tout le reste de la plateforme dépend de la réponse à une question simple : qui est cette personne et que peut-elle faire ? Le premier sprint a donc posé les bases communes : inscription, vérification de l'adresse e-mail, connexion, réinitialisation de mot de passe, rôles et premières pages d'administration. Nous y avons aussi installé le socle technique (structure du projet, déploiement continu) pour pouvoir livrer dès la suite.
+
+\section{Backlog du sprint}
+\begin{table}[htbp]
+\centering
+\small
+\caption{Backlog du sprint 1}\label{tab-backlog-s1}
+\begin{tabularx}{\textwidth}{@{}lXl@{}}
+\toprule
+\textbf{Réf.} & \textbf{Tâche} & \textbf{État}\\
+\midrule
+S1.1 & Mise en place du projet FastAPI et du projet Next.js, configuration SQLite/PostgreSQL & Terminé\\
+S1.2 & Déploiement continu sur le VPS par GitHub Actions (Nginx, systemd, PM2) & Terminé\\
+S1.3 & Inscription publique avec reCAPTCHA & Terminé\\
+S1.4 & Vérification d'adresse e-mail par code à six chiffres & Terminé\\
+S1.5 & Connexion, émission et vérification d'un jeton JWT & Terminé\\
+S1.6 & Réinitialisation de mot de passe par code OTP envoyé par e-mail & Terminé\\
+S1.7 & Rôles client, manager et super admin ; dépendances de contrôle côté API & Terminé\\
+S1.8 & Console d'administration : liste, création, modification, suppression des comptes & Terminé\\
+S1.9 & Profil : nom, entreprise, site, téléphone, photo, mot de passe & Terminé\\
+S1.10 & Page d'accueil, tableau de bord et pages légales & Terminé\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Conception de l'authentification}
+
+\subsection{Principes retenus}
+Nous avons choisi une authentification à base de jetons \gls{jwt} \cite{rfc7519}. À la connexion, le serveur vérifie le mot de passe, puis signe (algorithme HS256) un jeton contenant l'adresse de l'utilisateur, valable vingt-quatre heures. Le client le conserve et l'envoie dans l'en-tête \code{Authorization} de chaque requête. Ce modèle sans état évite de stocker des sessions côté serveur.
+
+Le jeton ne contient pas le rôle : à chaque requête protégée, la dépendance \code{get\_current\_user} décode le jeton puis relit l'utilisateur en base. Si un administrateur modifie un rôle, retire des droits ou supprime un compte, l'effet est immédiat.
+
+\subsection{Stockage des mots de passe}
+Les mots de passe sont hachés avec bcrypt \cite{provos1999bcrypt} via la bibliothèque passlib. Le serveur n'enregistre jamais le mot de passe en clair. \todo{indiquer la longueur minimale de mot de passe effectivement imposée côté client et côté serveur}
+
+\subsection{Inscription et vérification d'adresse}
+Le parcours d'inscription comporte plusieurs garde-fous (\cref{fig-seq-inscription}) :
+\begin{enumerate}
+  \item le formulaire est protégé par Google reCAPTCHA, pour limiter les inscriptions automatisées ;
+  \item le serveur refuse une adresse déjà utilisée, crée le compte en plan \code{free} et à l'état « non vérifié » ;
+  \item un code à six chiffres, valable vingt-quatre heures, est envoyé par e-mail ; l'utilisateur le saisit sur la page \route{/verify-email} et peut en demander un nouveau.
+\end{enumerate}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[node distance=7mm and 10mm, every node/.style={font=\small}, box/.style={draw,rounded corners,fill=grisclair,minimum width=2.6cm,minimum height=0.8cm,align=center}, arr/.style={-{Stealth[length=2mm]},thick}]
+  \node[box] (a) {Formulaire\\+ reCAPTCHA};
+  \node[box,right=of a] (b) {Création du\\compte (free)};
+  \node[box,right=of b] (c) {Envoi du\\code (24\,h)};
+  \node[box,right=of c] (d) {Saisie du\\code};
+  \node[box,below=of d,fill=jauneaw!30] (e) {Compte\\vérifié};
+  \node[box,below=of b,fill=rougeatodo!15] (f) {Adresse déjà\\utilisée : refus};
+  \draw[arr] (a)--(b); \draw[arr] (b)--(c); \draw[arr] (c)--(d); \draw[arr] (d)--(e);
+  \draw[arr,dashed] (a)|-(f);
+\end{tikzpicture}
+\caption{Parcours d'inscription et de vérification}\label{fig-seq-inscription}
+\end{figure}
+
+\todo{préciser si la connexion est refusée tant que l'adresse n'est pas vérifiée, ou si seules certaines fonctions sont bloquées}
+
+\subsection{Mot de passe oublié}
+La réinitialisation se fait en trois étapes : la demande (\route{/auth/forgot-password}) envoie un code \gls{otp} à six chiffres valable une heure ; la vérification du code (\route{/auth/verify-reset-code}) renvoie un jeton de réinitialisation à durée limitée ; ce jeton permet enfin de choisir un nouveau mot de passe (\route{/auth/reset-password}). Le code saisi n'est donc jamais réutilisable pour une autre opération. \todo{vérifier que la demande répond par le même message que l'adresse existe ou non (anti-énumération)}
+
+\figmanquante{fig-login}{Page de connexion}{Capturer la page /login (version française et, si possible, version arabe en RTL), avec le formulaire e-mail et mot de passe et le lien « Mot de passe oublié ».}
+
+\figmanquante{fig-inscription}{Page d'inscription et saisie du code de vérification}{Capturer /register avec le reCAPTCHA visible, puis /verify-email où l'on saisit le code à six chiffres.}
+
+\section{Contrôle d'accès par rôles}
+Le contrôle d'accès (\gls{rbac}) se fait à deux niveaux qui se complètent.
+
+\paragraph{Côté interface.} Le tableau de bord vérifie la présence du jeton et charge le profil ; la barre latérale (\code{Sidebar.tsx}) affiche ou verrouille les menus selon le plan et les fonctionnalités débloquées. L'administration est servie sous des chemins distincts du tableau de bord client, avec leur propre page de connexion. Ces contrôles améliorent l'ergonomie mais ne constituent pas une barrière de sécurité.
+
+\paragraph{Côté serveur.} C'est ici que se joue la sécurité réelle. Les routes clientes dépendent de \code{get\_current\_user} ; les routes d'administration de \code{get\_admin\_user}, qui exige \code{is\_admin} supérieur ou égal à~1. Les opérations critiques (suppression de compte, maintenance, actions mutantes de l'agent Jannet) sont réservées au super admin (\code{is\_admin = 1}). Les fonctionnalités payantes sont vérifiées au moment de l'appel : un client sans le drapeau \code{has\_ai\_visibility} ou sans crédit reçoit un refus explicite.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Accès par espace et par rôle}\label{tab-acces-roles}
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}p{4.6cm}p{4.2cm}cccc@{}}
+\toprule
+\textbf{Espace} & \textbf{Chemin} & \rotatebox{60}{\textbf{Free}} & \rotatebox{60}{\textbf{Pro}} & \rotatebox{60}{\textbf{Manager}} & \rotatebox{60}{\textbf{Super admin}}\\
+\midrule
+Public & \route{/}, \route{/en}, \route{/ar}, \route{/methodologie-score} & \ding{51} & \ding{51} & \ding{51} & \ding{51}\\
+Tableau de bord, audit de la page d'accueil, historique & \route{/dashboard}, \route{/dashboard/analyse} & \ding{51} & \ding{51} & --- & ---\\
+Audit Pro, visibilité IA, plan d'action, corrections, comparateur & \route{/dashboard/ai-visibility}, \ldots & --- & \ding{51} & --- & ---\\
+Gestion des clients et des crédits & \route{/ingbxweb/clients} & --- & --- & \ding{51} & \ding{51}\\
+Packs, maintenance, journaux, actions Jannet & chemin d'administration réservé & --- & --- & --- & \ding{51}\\
+Tickets Kanban, messagerie d'équipe & administration & --- & --- & \ding{51} & \ding{51}\\
+\bottomrule
+\end{tabular}
+\end{table}
+\todo{vérifier chaque case du tableau en testant avec un compte de chaque rôle ; ne pas publier le chemin exact de la console super admin}
+
+\section{Gestion des comptes par l'administrateur}
+La console d'administration propose la liste des comptes avec recherche, la création d'un compte, la modification du profil, du rôle et du plan, la suppression, ainsi que l'ajout ou la définition exacte des crédits. Une route de statistiques agrège le nombre de comptes, de clients Pro et d'audits ; elle alimente le tableau de bord administrateur. Une fonction de données de démonstration permet de préparer un compte complet pour une présentation commerciale.
+
+\fig[0.95]{figures/captures/utilisateurs.png}{Console d'administration : liste des utilisateurs}{fig-admin-console}
+\source{capture d'écran de l'application}
+
+\section{Profil et tableau de bord}
+Le client complète son profil (nom, entreprise, site, type de site, téléphone, photo). Le site renseigné pré-remplit les formulaires d'audit. Le tableau de bord (\cref{fig-dashboard}) résume les derniers scores, le solde de crédits et les raccourcis vers les modules.
+
+\fig[0.95]{figures/captures/dashboard.png}{Tableau de bord du client}{fig-dashboard}
+\source{capture d'écran de l'application}
+
+\section{Courriels transactionnels}
+Les courriels (code de vérification, code de réinitialisation, confirmation de ticket, notifications) sont envoyés par SMTP via un relais Brevo, avec une mise en page aux couleurs de \xapp. Une route d'administration permet d'envoyer un courriel de test pour diagnostiquer la configuration.
+
+\section{Bilan du sprint}
+\subsection{Livrables}
+Les comptes, l'authentification, les rôles et l'administration des utilisateurs sont en production, ainsi que la chaîne de déploiement continu. Les parcours critiques ont été testés manuellement. \todo{confirmer}
+
+\subsection{Rétrospective}
+\begin{description}[leftmargin=1.2em,style=nextline]
+  \item[Ce qui a bien fonctionné.] Mettre en place le déploiement continu dès le premier sprint a permis de tester chaque fonctionnalité dans les conditions réelles (HTTPS, Cloudflare, nom de domaine).
+  \item[Ce qui a posé problème.] La clé reCAPTCHA, liée au domaine, a dû être régénérée lors du passage au domaine définitif ; elle a temporairement bloqué la connexion de l'administrateur, et la vérification a été rendue facultative à la connexion. \todo{confirmer ce récit à partir de l'historique Git et de votre souvenir}
+  \item[À améliorer.] Le jeton est conservé dans le stockage local du navigateur, ce qui l'expose en cas de faille XSS ; un cookie \code{HttpOnly} serait plus sûr. Les codes de vérification sont stockés en clair ; les stocker sous forme de condensat réduirait l'impact d'une fuite de la base.
+\end{description}
+
+\section{Conclusion}
+Ce sprint a livré le socle du système : identité, rôles, sécurité d'accès et déploiement. Le sprint suivant s'appuie dessus pour construire le cœur de la valeur : le moteur d'audit SEO.

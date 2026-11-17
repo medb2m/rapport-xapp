@@ -1,0 +1,32 @@
+\chapter*{Conclusion générale et perspectives}
+\addcontentsline{toc}{chapter}{Conclusion générale et perspectives}
+\markboth{Conclusion générale}{Conclusion générale}
+
+\section*{Bilan du projet}
+Nous sommes partis d'un constat simple : auditer un site web est long, les outils du marché sont chers, en anglais, et aucun ne dit à une petite entreprise si les assistants conversationnels la citent. Le projet \xapp{} a consisté à construire, de bout en bout, une plateforme qui automatise cet audit, mesure la visibilité dans les moteurs génératifs et transforme les résultats en actions, puis à la mettre en production.
+
+Sur le plan fonctionnel, le résultat couvre l'audit SEO (page d'accueil, multi-pages, e-commerce), la visibilité IA (scores AEO et GEO, test de présence en direct dans ChatGPT et Groq), le plan d'action et la checklist de corrections vérifiables, l'agent Jannet (support, réunion vocale, agent d'administration), ainsi que les outils de gestion (tickets Kanban, messagerie, notifications, crédits, packs, administration), le tout dans une interface en français, en anglais et en arabe. Six des sept modules du cahier des charges sont réalisés et le septième, la monétisation, l'est partiellement. La plateforme repose sur plus d'une centaine de routes, dix-huit tables et un historique Git de 479 commits. \todo{vérifier les chiffres clés avant la version finale}
+
+Nous avons aussi fait des choix d'architecture assumés, comme l'exécuteur asynchrone intégré plutôt qu'une file de messages, et nous avons cherché à en exposer les raisons et les limites plutôt qu'à les masquer.
+
+\section*{Apports personnels}
+\todo{relire cette section et la réécrire avec vos propres mots et votre vécu réel du stage : les ressentis décrits ci-dessous sont déduits de l'historique du projet et doivent être confirmés ou corrigés par vous}
+
+Sur le plan technique, ce projet m'a obligée à aller au-delà de ce que les cours avaient abordé : la programmation asynchrone en Python, le parcours d'un site inconnu sans le surcharger, la conception de scores reproductibles, l'orchestration de modèles de langage avec des sorties contraintes, et l'administration complète d'un serveur de production (Nginx, TLS, systemd, PM2, déploiement continu). Les incidents de délai dépassé derrière Cloudflare m'ont appris à concevoir pour les conditions réelles du réseau, et pas seulement pour le poste de développement.
+
+Sur le plan méthodologique, j'ai mesuré l'intérêt d'une livraison continue : voir l'application tourner sur de vrais sites change la façon de prioriser. J'ai aussi appris à présenter honnêtement les limites d'une solution.
+
+Sur le plan humain, travailler dans une agence de référencement m'a permis de comprendre un métier, le SEO, et de traduire ses besoins en comportements précis du système.
+
+\section*{Perspectives}
+Les évolutions envisagées se classent par priorité décroissante.
+
+\begin{enumerate}
+  \item \textbf{Qualité et sécurité} : suite de tests automatisés (moteur d'audit, crédits, routes critiques), limitation de débit, cookies \code{HttpOnly}, codes stockés sous forme de condensat, filtrage des adresses internes.
+  \item \textbf{Monétisation} : finalisation du paiement en production et des offres par abonnement.
+  \item \textbf{Suivi dans le temps} : suivi des positions sur Google, suivi de la visibilité IA sur un panel de questions, rapports planifiés envoyés par e-mail.
+  \item \textbf{Montée en charge} : file de messages et plusieurs travailleurs pour les audits, bus partagé pour le temps réel.
+  \item \textbf{Ouverture} : extension WordPress pour appliquer certaines corrections directement, application mobile ou \gls{pwa}.
+\end{enumerate}
+
+Au terme de ce stage, \xapp{} est utilisable et déployée. Elle ne remplace pas l'expertise d'un consultant SEO ; elle lui épargne en revanche le travail répétitif et donne au propriétaire d'un site, pour la première fois, une vue claire de ce qu'il doit corriger, y compris pour être visible dans les réponses des intelligences artificielles.

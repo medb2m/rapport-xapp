@@ -1,0 +1,26 @@
+\chapter*{Résumé}
+\addcontentsline{toc}{chapter}{Résumé}
+
+Ce rapport présente le travail réalisé dans le cadre de mon projet de fin d'études au sein de \organisme, agence tunisienne de conception d'applications web et de référencement naturel. Les propriétaires de sites web, en particulier les petites entreprises tunisiennes, disposent de peu de moyens pour savoir pourquoi leur site est mal positionné sur Google, et encore moins pour savoir s'il est cité par les assistants conversationnels comme ChatGPT. Les outils du marché (Semrush, Ahrefs, Screaming Frog) sont coûteux, facturés en devises, rédigés en anglais et produisent des listes de problèmes sans plan d'action.
+
+Le projet \xapp{} répond à ce constat par une plateforme \gls{saas} qui automatise l'audit \gls{seo} d'un site (crawl multi-pages, analyse technique, sémantique et de performance, score sur 100), mesure sa visibilité dans les moteurs génératifs (scores \gls{aeo} et \gls{geo}, interrogation en direct de modèles de langage), puis transforme les résultats en un plan d'action sur quatorze jours et en une liste de corrections vérifiables automatiquement. La plateforme intègre aussi un agent conversationnel, Jannet, qui assiste les clients (support, réunion vocale) et les administrateurs (actions sur la plateforme avec journal d'annulation), ainsi que des outils de collaboration : tickets Kanban, messagerie d'équipe et notifications en temps réel.
+
+L'application repose sur FastAPI et SQLAlchemy pour l'API, Next.js~16 et React~19 pour l'interface trilingue (français, anglais, arabe), PostgreSQL en production, et les API d'OpenAI, de Groq et de Google PageSpeed Insights. Elle est déployée sur un serveur privé virtuel derrière Nginx, avec un déploiement continu par GitHub Actions. \todo{vérifier les chiffres clés repris dans le résumé et la durée exacte du stage}
+
+\medskip
+\noindent\textbf{Mots-clés :} audit SEO, visibilité IA, AEO, GEO, SaaS, FastAPI, Next.js, modèles de langage, agent conversationnel, plan d'action.
+
+\vspace{1.5cm}
+\selectlanguage{english}
+\chapter*{Abstract}
+\addcontentsline{toc}{chapter}{Abstract}
+
+This report describes the work carried out for my final-year project at \organisme, a Tunisian web development and search engine optimisation agency. Website owners, especially small Tunisian businesses, have few ways to understand why their site ranks poorly on Google, and even fewer to know whether conversational assistants such as ChatGPT mention them. Market tools (Semrush, Ahrefs, Screaming Frog) are expensive, billed in foreign currency, English-only, and they list problems without an action plan.
+
+\xapp{} answers this with a SaaS platform that automates the SEO audit of a website (multi-page crawl, technical, semantic and performance analysis, score out of 100), measures its visibility in generative engines (AEO and GEO scores, live queries to language models), and turns the results into a fourteen-day action plan and a checklist of automatically verifiable fixes. The platform also includes a conversational agent, Jannet, that assists customers (support, voice meeting) and administrators (platform actions with an undo log), together with collaboration tools: Kanban tickets, team chat and real-time notifications.
+
+The application uses FastAPI and SQLAlchemy, Next.js~16 and React~19 for a trilingual interface (French, English, Arabic), PostgreSQL in production, and the OpenAI, Groq and Google PageSpeed Insights APIs. It is deployed on a virtual private server behind Nginx with continuous deployment through GitHub Actions.
+
+\medskip
+\noindent\textbf{Keywords:} SEO audit, AI visibility, AEO, GEO, SaaS, FastAPI, Next.js, language models, conversational agent, action plan.
+\selectlanguage{french}

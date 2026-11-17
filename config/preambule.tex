@@ -1,0 +1,190 @@
+% !TEX root = ../main.tex
+\documentclass[12pt,a4paper,twoside,openany]{book}
+% Version écran : chapitres sur n'importe quelle page, pas de page blanche.
+% Pour la version IMPRIMÉE reliée : remettre "openright", supprimer la ligne
+% ci-dessous, et remettre \cleardoublepage à la place des \clearpage du
+% début de main.tex. La numérotation reste en chiffres arabes dans les deux cas.
+\let\cleardoublepage\clearpage
+
+% --- Langue et encodage ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[french]{babel}
+\usepackage{csquotes}
+
+% --- Mise en page ---
+\usepackage[top=2.5cm,bottom=2.5cm,inner=3cm,outer=2.5cm]{geometry}
+\usepackage{setspace}
+\onehalfspacing
+\usepackage{microtype}
+\usepackage{fancyhdr}
+\usepackage[explicit]{titlesec}
+\usepackage{titletoc}
+\usepackage{emptypage}
+
+% --- Couleurs (charte Al Wassit : anthracite et jaune) ---
+\usepackage[table,dvipsnames]{xcolor}
+\definecolor{anthracite}{HTML}{111827}
+\definecolor{jauneaw}{HTML}{F5B700}
+\definecolor{grisclair}{HTML}{F3F4F6}
+\definecolor{griscode}{HTML}{F8F8F8}
+\definecolor{rougeatodo}{HTML}{C00000}
+
+% --- Figures, tableaux, listes ---
+\usepackage{graphicx}
+\graphicspath{{figures/}}
+\usepackage{float}
+\usepackage[font=small,labelfont=bf,labelsep=period]{caption}
+\usepackage{subcaption}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{enumitem}
+\setlist{itemsep=2pt,topsep=4pt}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit,calc}
+\usepackage{pdflscape}
+\usepackage{adjustbox}
+
+% --- Mathématiques / symboles ---
+\usepackage{amsmath,amssymb}
+\usepackage{pifont}
+
+% --- Code source ---
+\usepackage{listings}
+\lstdefinelanguage{JSONx}{
+  morestring=[b]",
+  literate={:}{{{\color{anthracite}:}}}1,
+  sensitive=false
+}
+\lstset{
+  basicstyle=\ttfamily\footnotesize,
+  backgroundcolor=\color{griscode},
+  frame=single,
+  rulecolor=\color{gray!50},
+  breaklines=true,
+  breakatwhitespace=false,
+  columns=fullflexible,
+  keepspaces=true,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  numbersep=6pt,
+  xleftmargin=1.2em,
+  framexleftmargin=1em,
+  commentstyle=\color{gray}\itshape,
+  keywordstyle=\color{anthracite}\bfseries,
+  stringstyle=\color{brown!80!black},
+  captionpos=b,
+  literate=
+    {é}{{\'e}}1 {è}{{\`e}}1 {ê}{{\^e}}1 {à}{{\`a}}1 {â}{{\^a}}1
+    {ç}{{\c c}}1 {î}{{\^i}}1 {ô}{{\^o}}1 {û}{{\^u}}1 {ù}{{\`u}}1
+    {É}{{\'E}}1 {À}{{\`A}}1 {ï}{{\"i}}1
+}
+\lstdefinelanguage{JavaScriptx}{
+  keywords={const,let,var,function,return,if,else,async,await,import,export,from,new,throw,try,catch,default,true,false,null,for,of},
+  sensitive=true,
+  morecomment=[l]{//},
+  morecomment=[s]{/*}{*/},
+  morestring=[b]',
+  morestring=[b]",
+  morestring=[b]`
+}
+\lstdefinelanguage{TypeScriptx}{
+  language=JavaScriptx,
+  morekeywords={interface,type,class,implements,readonly,private,public,inject,Injectable}
+}
+
+% --- Bibliographie ---
+\lstset{literate={é}{{\'e}}1 {è}{{\`e}}1 {à}{{\`a}}1 {ç}{{\c c}}1 {ê}{{\^e}}1 {É}{{\'E}}1}
+
+\usepackage[backend=biber,style=numeric,sorting=none,maxbibnames=4]{biblatex}
+\addbibresource{bibliographie.bib}
+
+% --- Liens (en dernier ou presque) ---
+\usepackage[hidelinks,colorlinks=false,pdfusetitle,pdfencoding=auto,unicode]{hyperref}
+\usepackage[nameinlink,noabbrev]{cleveref}
+\usepackage{url}
+\urlstyle{same}
+
+% --- Glossaire / sigles ---
+\usepackage[acronym,nomain,toc,nonumberlist,style=long3col]{glossaries-extra}
+
+% --- Annotations de rédaction (à désactiver pour la version finale) ---
+% Mettre \afficheratodotrue en \afficheratodofalse pour masquer les repères rouges.
+\newif\ifafficheratodo
+\afficheratodotrue
+\newcommand{\todo}[1]{%
+  \ifafficheratodo\textcolor{rougeatodo}{\textbf{[À COMPLÉTER : #1]}}\fi}
+
+% Emplacement réservé pour une capture ou un schéma encore manquant.
+% Usage : \figmanquante{label}{Légende}{Description précise de ce qu'il faut capturer}
+\newcommand{\figmanquante}[3]{%
+  \begin{figure}[htbp]
+    \centering
+    \fbox{\parbox{0.88\textwidth}{\centering\vspace{1.2cm}%
+      \textcolor{rougeatodo}{\textbf{FIGURE À INSÉRER}}\\[4pt]
+      \small #3\vspace{1.2cm}}}
+    \caption{#2}\label{#1}
+  \end{figure}}
+
+% Figure standard (largeur en fraction de \textwidth)
+\newcommand{\fig}[4][0.9]{%
+  \begin{figure}[htbp]
+    \centering
+    \includegraphics[width=#1\textwidth]{#2}
+    \caption{#3}\label{#4}
+  \end{figure}}
+
+% Source d'une figure ou d'un tableau
+\newcommand{\source}[1]{\par\vspace{-2pt}{\footnotesize\textit{Source : #1}}\par}
+
+% Raccourcis typographiques
+\newcommand{\nom}[1]{\textsc{#1}}
+\newcommand{\code}[1]{\texttt{\small #1}}
+\newcommand{\route}[1]{{\small\path{#1}}}
+\newcommand{\xapp}{Xapp}
+
+% --- Titres de chapitres ---
+\titleformat{\chapter}[display]
+  {\normalfont\bfseries\color{anthracite}}
+  {\filleft\Large\textsc{\chaptertitlename}~\Huge\thechapter}
+  {10pt}
+  {\titlerule[2pt]\vspace{8pt}\filleft\Huge #1}
+\titlespacing*{\chapter}{0pt}{0pt}{30pt}
+\titleformat{name=\chapter,numberless}[display]
+  {\normalfont\bfseries\color{anthracite}}
+  {}
+  {0pt}
+  {\titlerule[2pt]\vspace{8pt}\filleft\Huge #1}
+\titleformat{\section}{\normalfont\Large\bfseries\color{anthracite}}{\thesection}{0.8em}{#1}
+\titleformat{\subsection}{\normalfont\large\bfseries\color{anthracite}}{\thesubsection}{0.8em}{#1}
+\titleformat{\subsubsection}{\normalfont\normalsize\bfseries\color{anthracite}}{\thesubsubsection}{0.8em}{#1}
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{2}
+
+% --- En-têtes et pieds de page ---
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[LE]{\small\nouppercase{\leftmark}}
+\fancyhead[RO]{\small\nouppercase{\rightmark}}
+\fancyfoot[LE,RO]{\thepage}
+\fancyfoot[RE,LO]{\footnotesize\titrecourt}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.2pt}
+\fancypagestyle{plain}{%
+  \fancyhf{}\fancyfoot[LE,RO]{\thepage}\renewcommand{\headrulewidth}{0pt}}
+
+% --- Environnement encadré pour les définitions / remarques ---
+\usepackage[most]{tcolorbox}
+\newtcolorbox{remarque}[1][Remarque]{
+  colback=grisclair,colframe=jauneaw,fonttitle=\bfseries,title=#1,
+  boxrule=0.6pt,left=6pt,right=6pt,top=4pt,bottom=4pt,breakable}
+
+\setlength{\parindent}{1.2em}
+\setlength{\parskip}{3pt}
+\raggedbottom
+\frenchbsetup{StandardItemLabels=true}

@@ -1,0 +1,130 @@
+\chapter{Sprint 2 : moteur d'audit SEO}
+
+\section{Introduction}
+Ce sprint construit le cœur de \xapp{} : le moteur qui parcourt un site, analyse chaque page et calcule un score. C'est aussi le sprint qui a rencontré les contraintes les plus concrètes : des sites lents, des sites immenses, des protections anti-robots, et un proxy qui coupe toute requête au-delà d'une centaine de secondes.
+
+\section{Backlog du sprint}
+\begin{table}[htbp]
+\centering
+\small
+\caption{Backlog du sprint 2}\label{tab-backlog-s2}
+\begin{tabularx}{\textwidth}{@{}lXl@{}}
+\toprule
+\textbf{Réf.} & \textbf{Tâche} & \textbf{État}\\
+\midrule
+S2.1 & Analyse unitaire d'une page (titre, méta-description, Hn, images, liens, canonical, robots) & Terminé\\
+S2.2 & Audit gratuit de la page d'accueil (vitrine basique) & Terminé\\
+S2.3 & Détection et analyse de \code{robots.txt} et du sitemap XML & Terminé\\
+S2.4 & Crawl multi-pages concurrent et audit Pro & Terminé\\
+S2.5 & Système de scoring sur 100 par catégorie & Terminé\\
+S2.6 & Exécuteur asynchrone de jobs, progression, remboursement & Terminé\\
+S2.7 & Audit e-commerce (fiches produits, catégories, plateforme) & Terminé\\
+S2.8 & Intégration PageSpeed Insights et Google Search Console & Terminé\\
+S2.9 & Historique, comparateur de concurrents, suggestion de mots-clés & Terminé\\
+S2.10 & Export PDF signé des rapports & Terminé\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Analyse d'une page}
+L'unité de base du moteur est l'analyse d'une URL. La page est téléchargée de façon asynchrone (aiohttp), puis analysée avec BeautifulSoup. Le \cref{tab-controles} résume les contrôles effectués, regroupés en catégories.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Contrôles effectués par le moteur d'audit}\label{tab-controles}
+\begin{tabularx}{\textwidth}{@{}p{2.6cm}X@{}}
+\toprule
+\textbf{Catégorie} & \textbf{Contrôles}\\
+\midrule
+Technique & HTTPS, code de statut HTTP, temps de réponse, taille du HTML, balise canonical, directives \code{noindex}/\code{nofollow}, balise viewport, liens cassés, \code{robots.txt}, sitemap\\
+Contenu & Présence et longueur du titre et de la méta-description, doublons de titres et de méta-descriptions entre pages, nombre de mots, attributs ALT des images\\
+Structure & Présence d'un H1 unique, hiérarchie des titres H1--H6, données structurées Schema.org\\
+Performance & Temps de chargement mesuré, Core Web Vitals (\gls{lcp}, \gls{cls}, \gls{inp}) et \gls{ttfb} via PageSpeed Insights\\
+E-commerce & Type de page (produit, catégorie), schéma \code{Product} (prix, devise, disponibilité, SKU, marque, avis), fil d'Ariane, plateforme détectée (WooCommerce, Shopify\ldots)\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Pour ne pas surcharger le site audité, la vérification des liens cassés est limitée à vingt liens par page, par des requêtes \code{HEAD} à concurrence bornée.
+
+\section{Crawl d'un site}
+L'audit Pro commence par lire \code{robots.txt} et le sitemap XML (jusqu'à 10\,000 URL, sitemaps imbriqués compris), qui servent à la fois d'indicateurs de qualité et de source d'URL. Le crawl part ensuite de la page d'accueil, suit les liens internes et filtre ce qui n'est pas une page (fichiers, paramètres de pagination, pages non publiées). Une empreinte du contenu permet d'écarter les pages en double. Les requêtes sont envoyées par un nombre limité de travailleurs (trois) avec un délai initial de vingt secondes, pour rester bien en deçà de la limite de Cloudflare.
+
+Le nombre de pages analysées en détail dépend du plan : la page d'accueil seule pour le plan Free, et des tranches de cent pages par crédit pour un audit Pro. En parallèle, un module de « score du site complet » (\code{full\_site.py}) parcourt jusqu'à 5\,000 pages avec une analyse plus légère, pour compter les problèmes à l'échelle du site entier. \todo{confirmer la limite de pages réellement appliquée par plan (40, 100 ou par tranche) et la mettre en cohérence avec la présentation}
+
+\section{Calcul du score}
+Le score a été conçu pour être exigeant : un score supérieur à 90 doit être difficile à obtenir, afin que l'outil ne flatte pas l'utilisateur. Le score technique pèse 60~\% du score d'une page ; il combine des notes partielles avec des seuils explicites (\cref{tab-seuils}). Le score de contenu complète les 40~\% restants. Les signaux de niveau site (HTTPS, qualité de \code{robots.txt} et du sitemap) sont intégrés au score technique de chaque page, et les titres ou descriptions dupliqués sont pénalisés.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Exemple de barème : temps de chargement d'une page}\label{tab-seuils}
+\begin{tabular}{@{}lc@{}}
+\toprule
+\textbf{Temps de chargement} & \textbf{Note partielle}\\
+\midrule
+$\leq 700$~ms & 100\\
+$\leq 1\,500$~ms & 80\\
+$\leq 2\,500$~ms & 60\\
+$\leq 4\,000$~ms & 30\\
+au-delà & 10\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Le score du site complet suit une autre logique, fondée sur les problèmes : chaque type de problème a une gravité, et le score vaut
+\[ S = 100 \times \left(1 - \frac{\sum_k \frac{n_k}{N}\, g_k}{\sum_k g_k}\right) \]
+où $n_k$ est le nombre de pages présentant le problème $k$, $N$ le nombre de pages analysées et $g_k$ la gravité du problème. Une page publique (\route{/methodologie-score}) explique cette méthode aux utilisateurs. \todo{vérifier la répartition exacte 60/40 et la formule finale dans scoring.py et full\_site.py avant la soutenance}
+
+\fig[0.95]{figures/captures/seo_complet.png}{Résultat d'un audit SEO : score global, scores par catégorie et pages analysées}{fig-seo-resultat}
+\source{capture d'écran de l'application}
+
+\fig[0.95]{figures/captures/seo_indicateurs.png}{Indicateurs clés d'un audit}{fig-seo-indicateurs}
+\source{capture d'écran de l'application}
+
+\section{Exécution asynchrone}
+Un audit Pro ne peut pas tenir dans une requête HTTP. Nous l'avons donc confié à un exécuteur intégré (\code{audit\_runner.py}) :
+\begin{enumerate}
+  \item la route \route{/audit/start} débite le crédit, crée un job \code{queued} et répond aussitôt (code~202) ;
+  \item une boucle asyncio, démarrée avec FastAPI, prend les jobs un par un (concurrence~1, pour protéger le serveur), les passe à \code{running} et exécute l'audit vitrine ou e-commerce ;
+  \item le moteur met à jour la progression (pourcentage, pages analysées sur pages totales) au fil du crawl ;
+  \item à la fin, le résultat est enregistré dans \code{audits}, les corrections sont dérivées (chapitre~\ref{chap-visibilite}) et le job passe à \code{done} ;
+  \item en cas d'erreur ou au-delà de 600~secondes, le job passe à \code{failed} et le crédit est remboursé, une seule fois grâce au drapeau \code{credit\_refunded}.
+\end{enumerate}
+
+Côté interface, la page d'analyse interroge \route{/audit/status/\{job\_id\}} toutes les trois secondes et affiche une barre de progression.
+
+\begin{lstlisting}[language=Python,caption={Paramètres de l'exécuteur d'audit (extrait)},label={lst-runner}]
+# Budget temps large pour un job de fond (le HTTP ne nous limite plus).
+JOB_MAX_SECONDS = 600
+# Pages détaillées par crédit / par lot.
+JOB_PAGES_PER_BATCH = 100
+\end{lstlisting}
+
+\section{Intégrations Google}
+\paragraph{PageSpeed Insights.} L'API PageSpeed Insights (version~5) fournit, pour la stratégie mobile, les métriques de laboratoire et, quand elles existent, les données terrain (CrUX). Nous les reprenons telles quelles plutôt que de recalculer une performance moins fiable.
+
+\paragraph{Google Search Console.} Le client peut connecter son compte Search Console par \gls{oauth}~2.0, avec la portée en lecture seule \code{webmasters.readonly}. La plateforme conserve le jeton de rafraîchissement, choisit la propriété correspondant au site du client et utilise l'API d'inspection d'URL pour connaître l'état réel d'indexation des pages (cinq inspections en parallèle au plus). \todo{ajouter une capture de la connexion GSC ou de l'état d'indexation, si la fonctionnalité est active en production}
+
+\section{Historique, comparateur et mots-clés}
+Chaque audit est conservé et consultable depuis l'historique. Le comparateur met en regard le score du site avec celui de concurrents saisis par l'utilisateur. Une route de suggestion de mots-clés s'appuie sur le contenu de la page et un modèle de langage pour proposer des mots-clés à cibler, que l'utilisateur sélectionne dans une fenêtre dédiée. \todo{préciser le nombre maximal de concurrents réellement accepté (la documentation indique 3)}
+
+\figmanquante{fig-comparateur}{Comparateur de concurrents}{Capturer /dashboard/comparateur avec le site et deux ou trois concurrents comparés.}
+
+\section{Export PDF signé}
+Le rapport d'audit et le plan d'action peuvent être exportés en PDF. Le document est produit côté serveur avec ReportLab, aux couleurs de \xapp{} : logo, score, recommandations, puis un pied de page portant une signature calculée par SHA-256 sur l'URL, le score, le type, la date et l'adresse du client. Chaque export est enregistré dans la table \code{exports}. Il s'agit d'une empreinte d'intégrité et non d'une signature électronique au sens juridique. \todo{reformuler la mention « certifié par signature électronique » imprimée sur les PDF, qui peut prêter à confusion}
+
+\section{Bilan du sprint}
+\subsection{Livrables}
+Le moteur d'audit (page d'accueil, Pro, e-commerce), le scoring, l'exécuteur asynchrone, les intégrations Google, l'historique, le comparateur et l'export PDF sont en production.
+
+\subsection{Rétrospective}
+\begin{description}[leftmargin=1.2em,style=nextline]
+  \item[Ce qui a bien fonctionné.] Séparer le job de son résultat a rendu le remboursement simple et fiable, et a permis d'afficher une progression réelle.
+  \item[Ce qui a posé problème.] Les premières versions exécutaient l'audit dans la requête HTTP ; sur les sites lents ou volumineux, Cloudflare coupait la connexion (erreurs 522 et 524). Il a fallu réduire les délais, borner le crawl, ajouter une route de santé et un outil d'éligibilité, puis passer à l'exécution asynchrone.
+  \item[À améliorer.] La concurrence de un job à la fois crée une file d'attente si plusieurs clients lancent un audit simultanément. Les seuils du score ont été fixés empiriquement et mériteraient d'être calibrés sur un échantillon de sites.
+\end{description}
+
+\section{Conclusion}
+Ce sprint a livré un audit SEO automatique, exigeant et robuste aux sites difficiles. Le sprint suivant ajoute la dimension qui distingue \xapp{} des outils existants : la visibilité dans les moteurs génératifs et la transformation de l'audit en actions.

@@ -1,0 +1,31 @@
+{
+  "latex-workshop.latex.rootFile.doNotPrompt": true,
+  "latex-workshop.latex.rootFile.useSubFile": false,
+  "latex-workshop.latex.autoBuild.run": "onSave",
+  "latex-workshop.view.pdf.viewer": "tab",
+  "latex-workshop.latex.recipe.default": "Al Wassit (pdflatex+biber+makeindex)",
+  "latex-workshop.latex.clean.fileTypes": ["*.aux","*.bbl","*.blg","*.bcf","*.run.xml","*.log","*.out","*.toc","*.lof","*.lot","*.acn","*.acr","*.alg","*.ist","*.glo","*.gls","*.glg","*.synctex.gz"],
+  "latex-workshop.latex.tools": [
+    {
+      "name": "pdflatex",
+      "command": "C:/Users/medob/AppData/Local/Programs/MiKTeX/miktex/bin/x64/pdflatex.exe",
+      "args": ["-synctex=1", "-interaction=nonstopmode", "-file-line-error", "%DOC%"]
+    },
+    {
+      "name": "biber",
+      "command": "C:/Users/medob/AppData/Local/Programs/MiKTeX/miktex/bin/x64/biber.exe",
+      "args": ["%DOCFILE%"]
+    },
+    {
+      "name": "makeindex-acronymes",
+      "command": "C:/Users/medob/AppData/Local/Programs/MiKTeX/miktex/bin/x64/makeindex.exe",
+      "args": ["-s", "%DOCFILE%.ist", "-t", "%DOCFILE%.alg", "-o", "%DOCFILE%.acr", "%DOCFILE%.acn"]
+    }
+  ],
+  "latex-workshop.latex.recipes": [
+    {
+      "name": "Al Wassit (pdflatex+biber+makeindex)",
+      "tools": ["pdflatex", "biber", "makeindex-acronymes", "pdflatex", "pdflatex"]
+    }
+  ]
+}

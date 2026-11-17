@@ -1,0 +1,40 @@
+% Page de garde officielle ESPRIT (gabarit "Page Garde Rapport Stage(Fr)").
+% Le fond est l'image officielle ; les champs sont superposés avec tikz.
+\begin{titlepage}
+\thispagestyle{empty}
+\newgeometry{margin=0pt}
+\begin{tikzpicture}[remember picture, overlay]
+  % Fond officiel pleine page
+  \node[anchor=north west, inner sep=0pt] at (current page.north west)
+    {\includegraphics[width=\paperwidth,height=\paperheight]{figures/page_garde_esprit.png}};
+
+  % Année universitaire
+  \node[anchor=west] at ([xshift=5.9cm,yshift=-4.5cm]current page.north west)
+    {\sffamily\large\bfseries\color{anthracite} \anneeuniv};
+
+  % Spécialité (complète le libellé "SPÉCIALITÉ :" imprimé sur le fond)
+  \node[anchor=west] at ([xshift=10.9cm,yshift=-11.9cm]current page.north west)
+    {\sffamily\Large\bfseries\color{anthracite} \specialite};
+
+  % Sujet du rapport (zone blanche centrale)
+  \node[anchor=north, text width=11.5cm, align=center]
+    at ([xshift=14.6cm,yshift=-13.1cm]current page.north west)
+    {\sffamily\Large\bfseries\color{anthracite} \titrepfe};
+
+  % Logo du projet
+  \node[anchor=north] at ([xshift=14.6cm,yshift=-16.9cm]current page.north west)
+    {\includegraphics[height=1.4cm,keepaspectratio]{figures/logos/logo_xapp.png}};
+
+  % Réalisé par / Encadré par
+  \node[anchor=north, align=center] at ([xshift=14.6cm,yshift=-19cm]current page.north west)
+    {\sffamily\normalsize\textbf{Réalisé par :} \auteur\\[10pt]
+     \sffamily\normalsize\textbf{Encadré par :}\\[4pt]
+     \sffamily\small Encadrante ESPRIT : \encadrantacad\\[2pt]
+     \sffamily\small Encadrant Entreprise : \encadrantent};
+
+  % Logo de l'entreprise d'accueil dans le cadre pointillé
+  \node at ([xshift=13.4cm,yshift=-24.55cm]current page.north west)
+    {\includegraphics[height=2.6cm,keepaspectratio]{figures/logos/logo_xweb.png}};
+\end{tikzpicture}
+\restoregeometry
+\end{titlepage}

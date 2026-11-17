@@ -1,0 +1,54 @@
+% !TEX root = main.tex
+\input{config/preambule}
+\input{config/infos}
+\input{config/glossaire}
+\makeglossaries
+
+\hypersetup{pdftitle={\titrecourt},pdfauthor={\auteur},pdfsubject={Rapport de Projet de Fin d'Études}}
+
+\begin{document}
+
+\pagenumbering{arabic}
+\pagestyle{empty}
+\input{frontmatter/couverture}
+\clearpage
+\input{frontmatter/dedicace}
+\clearpage
+\input{frontmatter/remerciements}
+\clearpage
+\input{frontmatter/resume}
+\clearpage
+
+\pagestyle{fancy}
+\tableofcontents
+\clearpage
+\listoffigures
+\clearpage
+\listoftables
+\clearpage
+\glsaddall
+\printglossary[type=\acronymtype,title={Liste des abréviations},style=long3col]
+
+% Active la numérotation des chapitres sans réinitialiser le compteur de pages
+\makeatletter\@mainmattertrue\makeatother
+\input{chapitres/introduction}
+\input{chapitres/ch1_contexte}
+\input{chapitres/ch2_analyse}
+\input{chapitres/ch3_conception}
+\input{chapitres/ch4_sprint1_comptes}
+\input{chapitres/ch5_sprint2_audit_seo}
+\input{chapitres/ch6_sprint3_visibilite_ia}
+\input{chapitres/ch7_sprint4_jannet_collaboration}
+\input{chapitres/ch8_deploiement_tests}
+\input{chapitres/conclusion}
+
+\appendix
+\input{annexes/annexes}
+
+\backmatter
+\clearpage
+\phantomsection
+\addcontentsline{toc}{chapter}{Bibliographie et webographie}
+\printbibliography[title={Bibliographie et webographie}]
+
+\end{document}

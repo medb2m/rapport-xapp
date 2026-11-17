@@ -1,0 +1,116 @@
+\chapter{Sprint 3 : visibilité IA, plan d'action et corrections}\label{chap-visibilite}
+
+\section{Introduction}
+Ce sprint répond à la deuxième moitié de la problématique : mesurer la visibilité d'un site dans les moteurs génératifs, puis transformer l'ensemble des diagnostics en actions concrètes. Il comprend trois volets : les scores \gls{aeo} et \gls{geo}, le test de présence dans les réponses des modèles de langage, et la chaîne « plan d'action, corrections, vérification ».
+
+\section{Backlog du sprint}
+\begin{table}[htbp]
+\centering
+\small
+\caption{Backlog du sprint 3}\label{tab-backlog-s3}
+\begin{tabularx}{\textwidth}{@{}lXl@{}}
+\toprule
+\textbf{Réf.} & \textbf{Tâche} & \textbf{État}\\
+\midrule
+S3.1 & Score AEO : FAQ, schéma FAQPage, structure des titres, lisibilité, HowTo & Terminé\\
+S3.2 & Score GEO : signaux E-E-A-T, schéma Article, cohérence thématique, blocs adaptés à l'IA & Terminé\\
+S3.3 & Détection des robots d'IA bloqués et des technologies du site & Terminé\\
+S3.4 & Test de présence dans ChatGPT et Groq, analyse des citations & Terminé\\
+S3.5 & Diffusion des résultats en flux (SSE) & Terminé\\
+S3.6 & Recommandations IA et comparaison avec les concurrents & Terminé\\
+S3.7 & Plan d'action généré par IA et export & Terminé\\
+S3.8 & Optimisation de contenu (titres, méta-descriptions, textes) & Terminé\\
+S3.9 & Checklist de corrections et vérification automatique & Terminé\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Des moteurs de recherche aux moteurs génératifs}
+Un moteur de recherche classique renvoie une liste de liens ; un moteur génératif rédige une réponse et n'en cite que quelques sources \cite{aggarwal2024geo}. Deux disciplines émergent pour s'y adapter :
+\begin{description}[leftmargin=1.2em,style=nextline]
+  \item[AEO (\textit{Answer Engine Optimization}).] Structurer le contenu pour qu'il réponde directement à une question : FAQ, blocs question-réponse, données structurées \code{FAQPage} et \code{HowTo} \cite{schemaorg}.
+  \item[GEO (\textit{Generative Engine Optimization}).] Rendre le contenu crédible et réutilisable par un modèle : signaux d'expérience, d'expertise, d'autorité et de fiabilité (\gls{eeat}) \cite{googleeeat}, cohérence thématique, citations, statistiques, sémantique HTML.
+\end{description}
+
+\section{Scores AEO et GEO}
+Chaque score est une somme de composantes plafonnée à 100 (\cref{tab-aeo-geo}). Le score de préparation IA est la moyenne des deux.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Composantes des scores AEO et GEO}\label{tab-aeo-geo}
+\begin{tabularx}{\textwidth}{@{}p{1.4cm}X@{}}
+\toprule
+\textbf{Score} & \textbf{Composantes}\\
+\midrule
+AEO & Présence d'une FAQ et nombre de questions, schéma \code{FAQPage}, hiérarchie des titres valide, lisibilité du texte (25~\% du score de lisibilité), schéma \code{HowTo}, blocs de réponse courts\\
+GEO & Signaux E-E-A-T (35~\% : auteur, dates, mentions légales, contact, références), schéma \code{Article} (15 points), cohérence thématique (jusqu'à 15 points), blocs adaptés à l'IA (listes, tableaux, définitions), performance (10~\%), sémantique HTML (10~\%)\\
+Global & $\text{score IA} = 0{,}5 \times \text{AEO} + 0{,}5 \times \text{GEO}$\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+L'analyse vérifie aussi si \code{robots.txt} bloque des robots d'IA (par exemple GPTBot), ce qui empêcherait le site d'être exploité par ces moteurs, et détecte les technologies utilisées (CMS, cadriciel) pour adapter les recommandations. Chaque recommandation comporte une priorité, une explication et la marche à suivre. \todo{faire relire le barème par l'encadrant : il est construit empiriquement et doit être présenté comme tel au jury}
+
+\section{Présence dans les réponses des modèles}
+Un bon score de préparation ne dit pas si un modèle cite effectivement le site. Le module \code{ai\_presence.py} le teste directement :
+\begin{enumerate}
+  \item à partir de l'URL, du titre, de la description et du type de site, il construit des requêtes qu'un internaute pourrait poser (« quels sont les meilleurs \ldots{} en Tunisie ? ») ;
+  \item il les envoie à plusieurs moteurs : ChatGPT (modèle GPT-4o-mini) et un modèle ouvert servi par Groq, Gemini étant prévu en option ;
+  \item il analyse chaque réponse : le site ou la marque est-il cité (avec ses variantes d'écriture) ? à quelle position ? quels concurrents apparaissent ? avec quelle tonalité ? Un extrait de la réponse est conservé comme preuve.
+\end{enumerate}
+
+Ces appels prennent plusieurs secondes chacun. Pour que l'utilisateur ne fixe pas un écran vide, la route \route{/api/ai-visibility/stream} renvoie les étapes en flux \gls{sse} \cite{whatwgsse} : analyse du site, puis résultat de chaque moteur dès qu'il arrive (\cref{fig-visibilite}).
+
+\fig[0.9]{figures/captures/visibilite_ia.png}{Analyse de visibilité IA : résultats affichés en direct pour chaque moteur}{fig-visibilite}
+\source{capture d'écran de l'application}
+
+Les réponses d'un modèle varient d'un appel à l'autre et dépendent de sa date d'entraînement. Le résultat est donc un instantané, pas une mesure stable ; l'interface l'indique. \todo{vérifier que l'interface affiche bien cet avertissement ; sinon l'ajouter ou supprimer la phrase}
+
+\section{Plan d'action}
+Le plan d'action transforme un audit en calendrier de travail. L'API envoie au modèle de langage un résumé structuré des problèmes réellement détectés, avec une consigne qui impose de ne s'appuyer que sur ce diagnostic, de prioriser par rapport impact/effort et de fournir des contenus prêts à copier (titres, méta-descriptions, textes). Le plan, rédigé en Markdown, est enregistré avec l'audit, affiché par React Markdown et exportable en PDF (\cref{fig-plan-action}).
+
+\fig[0.75]{figures/captures/plan_action.png}{Génération du plan d'action à partir d'un audit}{fig-plan-action}
+\source{capture d'écran de l'application}
+
+\todo{la documentation et la présentation parlent d'un plan sur 14 jours et de GPT-4o, alors que la consigne actuelle du code demande un plan sur 7 jours au modèle GPT-4o-mini : vérifier et harmoniser le texte}
+
+\figmanquante{fig-plan-genere}{Plan d'action généré}{Capturer un plan d'action généré (calendrier jour par jour avec contenus prêts à copier) et, si possible, la première page du PDF exporté.}
+
+Une fonction d'optimisation de contenu, accessible depuis la visibilité IA, propose de son côté des réécritures ciblées (titre, méta-description, paragraphe de FAQ) pour une page donnée.
+
+\section{Checklist de corrections}
+\subsection{Dérivation depuis l'audit}
+À la fin de chaque audit SEO ou IA, la fonction \code{derive\_from\_audit} transforme les problèmes détectés en éléments de correction. Chaque élément porte une clé machine (\code{check\_key}), une catégorie, une gravité de 1 à 3, les pages concernées et une explication de la correction. Si l'élément existe déjà pour ce site, il est mis à jour au lieu d'être dupliqué ; l'utilisateur garde ainsi une liste stable d'un audit à l'autre.
+
+\subsection{Vérification ciblée}
+L'utilisateur qui pense avoir corrigé un problème clique sur « Vérifier ». Au lieu de relancer un audit complet, la plateforme ne refait que le test concerné : présence de \code{robots.txt} ou du sitemap, statut des liens signalés comme cassés, temps de réponse, présence d'un schéma, ou contrôle de page (titre, H1, ALT\ldots). Si le test réussit, l'élément passe à \code{fixed} ; sinon il reste ouvert. L'utilisateur peut aussi marquer un élément comme traité ou l'écarter (\code{dismissed}). Chaque événement est ajouté à l'historique de l'élément.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[every node/.style={font=\small}, st/.style={draw,rounded corners,fill=grisclair,minimum width=2.4cm,minimum height=0.8cm,align=center}, lab/.style={font=\footnotesize}, arr/.style={-{Stealth[length=2mm]},thick}]
+  \node[st] (open) at (0,0) {\code{open}};
+  \node[st,fill=jauneaw!30] (fixed) at (6.5,0) {\code{fixed}};
+  \node[st] (dis) at (0,-2.2) {\code{dismissed}};
+  \draw[arr] (open.north east) to[bend left=20] node[lab,above]{vérification OK / marqué fait} (fixed.north west);
+  \draw[arr] (fixed.south west) to[bend left=20] node[lab,below]{rouvert / régression} (open.south east);
+  \draw[arr] (open)--node[lab,left]{écarté}(dis);
+\end{tikzpicture}
+\caption{Cycle de vie d'un élément de correction}\label{fig-cycle-correction}
+\end{figure}
+
+\figmanquante{fig-corrections}{Page de suivi des corrections}{Capturer /dashboard/corrections avec plusieurs éléments de catégories et de gravités différentes, un élément vérifié (fixed) et le bouton « Vérifier ».}
+
+\section{Bilan du sprint}
+\subsection{Livrables}
+Les scores AEO et GEO, le test de présence en direct, le plan d'action, l'optimisation de contenu et la checklist de corrections sont en production.
+
+\subsection{Rétrospective}
+\begin{description}[leftmargin=1.2em,style=nextline]
+  \item[Ce qui a bien fonctionné.] Le flux SSE a nettement amélioré la perception du temps d'attente. Contraindre le modèle à ne traiter que les problèmes détectés a supprimé les recommandations génériques.
+  \item[Ce qui a posé problème.] Les appels aux fournisseurs d'IA échouaient parfois (quota, délai). Nous avons ajouté trois tentatives, un délai de trente secondes et une journalisation détaillée des erreurs.
+  \item[À améliorer.] Le test de présence repose sur un petit nombre de requêtes ; un suivi dans le temps, avec un panel de questions plus large, donnerait une mesure plus fiable.
+\end{description}
+
+\section{Conclusion}
+Avec ce sprint, \xapp{} couvre l'ensemble de la chaîne : diagnostic classique, diagnostic IA, plan d'action et vérification. Le dernier sprint de développement ajoute l'accompagnement (Jannet), la collaboration et la monétisation.

@@ -1,0 +1,171 @@
+\chapter{Contexte général du projet}
+
+\section{Introduction}
+Ce premier chapitre situe le projet. Nous commençons par présenter \organisme, où le stage s'est déroulé, puis nous décrivons la manière dont un audit de référencement est réalisé aujourd'hui et les limites des outils disponibles. Nous en déduisons la problématique et la solution retenue. Le chapitre se termine par la méthodologie de conduite de projet et les raisons qui nous ont conduite à la choisir.
+
+\section{Présentation de l'organisme d'accueil}
+
+\subsection{Présentation générale}
+\organisme{} (Xweb Tunisie) est une agence tunisienne spécialisée dans la conception d'applications web et de solutions \gls{saas} sur mesure, l'expérience utilisateur et le référencement naturel. Sa signature, « \textit{Code. Optimize. Dominate.} », résume son positionnement : développer des plateformes performantes, les optimiser pour les moteurs de recherche, et aider ses clients à gagner en visibilité. \todo{année de création, forme juridique, adresse, effectif, à confirmer auprès de l'encadrant}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.25\textwidth]{figures/logos/logo_xweb.png}
+  \caption{Logo de \organisme}\label{fig-logo-xweb}
+\end{figure}
+
+\fig[0.95]{figures/divers/xweb_site.png}{Page d'accueil du site institutionnel de \organisme{} et références clientes}{fig-xweb-site}
+\source{capture du site web de l'agence, consultée lors du stage}
+
+\subsection{Activités et clientèle}
+L'agence intervient sur trois métiers complémentaires : le développement d'applications web et de plateformes métier, la conception d'interfaces centrées sur l'utilisateur, et l'optimisation du référencement (audit, contenu, performance). Ses clients sont majoritairement des entreprises tunisiennes de petite et moyenne taille, dont certaines figurent sur la \cref{fig-xweb-site}. \todo{vérifier avec l'agence la répartition réelle des activités et l'autorisation de publier les logos clients visibles sur la capture}
+
+\subsection{Organisation interne}
+\todo{insérer l'organigramme de l'agence (direction, développement, design, SEO, commercial) ou le décrire en quelques lignes, après validation par l'encadrant ; si l'agence ne souhaite pas le publier, supprimer cette sous-section}
+
+\subsection{Cadre du stage}
+Le stage s'inscrit dans le projet de fin d'études de la formation suivie à \etablissement. Le sujet a été formalisé dans un cahier des charges interne décrivant une plateforme d'audit \gls{seo} et de visibilité IA, ses modules fonctionnels, son architecture cible et sa feuille de route. Le projet a d'abord porté le nom de travail « SEOtunisie » ; l'application a ensuite été renommée \xapp{} pour s'aligner sur l'identité de l'agence. Elle est publiée sous le domaine \urlprod.
+
+Le travail est encadré sur deux plans : \encadrantacad{} assure le suivi académique et \encadrantent{} le suivi technique et métier au sein de l'agence, avec des points réguliers pour valider l'orientation prise. \todo{préciser la fréquence réelle des points de suivi}
+
+\section{Étude de l'existant}
+
+\subsection{Description de l'existant}
+Avant le projet, un audit de référencement reposait sur la combinaison de plusieurs pratiques et outils (\cref{fig-outils-existants}) :
+\begin{itemize}
+  \item un \textbf{audit manuel} par un consultant ou un freelance, qui inspecte les pages, relève les balises manquantes et rédige un rapport sous forme de document ;
+  \item des \textbf{suites SEO commerciales} comme Semrush ou Ahrefs, qui fournissent des audits de site, des données de mots-clés et de liens entrants, sur abonnement mensuel ;
+  \item des \textbf{crawlers de bureau} comme Screaming Frog SEO Spider, qui parcourent un site et listent les erreurs techniques ;
+  \item des \textbf{outils gratuits de Google}, principalement PageSpeed Insights pour la performance et Google Search Console pour l'indexation.
+\end{itemize}
+
+\fig[0.7]{figures/divers/outils_existants.png}{Principaux outils d'audit SEO utilisés ou envisagés avant le projet}{fig-outils-existants}
+\source{logos des éditeurs concernés ; montage réalisé pour la présentation du projet}
+
+\subsection{Critique de l'existant}
+Ces solutions sont reconnues, mais elles répondent mal aux besoins des clients de l'agence. Nous en avons retenu cinq limites, issues de l'observation du travail de l'équipe et des échanges avec l'encadrant :
+
+\begin{description}[leftmargin=1.2em,style=nextline]
+  \item[Coût et facturation en devises.] Les suites commerciales sont facturées par abonnement mensuel, de l'ordre d'une centaine de dollars par mois pour les premières offres, et payables en devises étrangères, ce qui est un frein réel pour une petite entreprise tunisienne. \todo{citer un tarif public vérifié de Semrush et d'Ahrefs, consulté à une date précise}
+  \item[Diagnostic sans plan d'action.] Les rapports listent des centaines d'anomalies, souvent en termes techniques, sans dire par où commencer ni comment corriger. Le propriétaire du site reste seul face à la liste.
+  \item[Aucune mesure de la visibilité IA.] Aucun de ces outils, à la date de l'étude, ne mesurait de manière simple si un site est cité par les assistants conversationnels ni s'il est structuré pour l'être (FAQ, données structurées, signaux de crédibilité). \todo{vérifier cette affirmation à la date de la soutenance : certains éditeurs ont commencé à proposer des modules de suivi IA}
+  \item[Barrière de la langue.] Les interfaces sont en anglais, rarement en français et jamais en arabe, alors qu'une grande partie de la clientèle visée est arabophone ou francophone.
+  \item[Suivi des corrections inexistant.] Une fois l'audit livré, rien ne permet de vérifier qu'une anomalie a été corrigée, sinon relancer un audit complet et comparer à la main.
+\end{description}
+
+Le \cref{tab-comparatif-outils} résume cette comparaison.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Comparaison de l'existant avec les besoins identifiés}\label{tab-comparatif-outils}
+\begin{tabularx}{\textwidth}{@{}lXXXX@{}}
+\toprule
+\textbf{Besoin} & \textbf{Audit manuel} & \textbf{Semrush / Ahrefs} & \textbf{Screaming Frog / PSI} & \textbf{Cible \xapp}\\
+\midrule
+Audit technique automatisé & Non & Oui & Oui & Oui\\
+Score global compréhensible & Variable & Oui & Non & Oui\\
+Plan d'action priorisé & Oui (coûteux) & Partiel & Non & Oui (IA)\\
+Mesure de la visibilité IA & Non & \todo{à vérifier} & Non & Oui\\
+Suivi des corrections & Non & Partiel & Non & Oui\\
+Interface FR / AR & Oui & Non & Non & Oui\\
+Paiement local en dinars & Oui & Non & Non & Oui\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Problématique}
+De cette analyse découle la question à laquelle le projet doit répondre :
+
+\begin{remarque}[Problématique]
+Comment automatiser l'audit SEO d'un site et mesurer sa visibilité à la fois dans les moteurs de recherche classiques et dans les moteurs génératifs, tout en fournissant des recommandations actionnables et un plan d'optimisation personnalisé, à un coût accessible pour une petite entreprise tunisienne ?
+\end{remarque}
+
+Cette question en contient plusieurs. Il faut un moteur capable de parcourir un site inconnu, rapidement et sans le surcharger. Il faut des scores reproductibles, qui ne flattent pas l'utilisateur. Il faut interroger des modèles de langage externes, payants et parfois indisponibles, et transformer leurs réponses en indicateurs. Il faut enfin un modèle économique (crédits, paiement local) et une interface trilingue.
+
+\subsection{Solution proposée}
+Nous proposons \xapp, une plateforme web accessible depuis un navigateur, sans installation, organisée autour de cinq modules :
+\begin{itemize}
+  \item un \textbf{moteur d'audit SEO} qui parcourt jusqu'à une centaine de pages, analyse les aspects techniques, sémantiques et de performance, et calcule un score sur 100 détaillé par catégorie ;
+  \item un module de \textbf{visibilité IA en direct}, qui calcule des scores AEO et GEO et interroge des modèles de langage (ChatGPT, Groq) pour savoir s'ils citent le site et ses concurrents ;
+  \item un \textbf{plan d'action et un suivi des corrections}, avec un calendrier de quatorze jours généré par IA, des contenus prêts à copier et une liste de corrections revérifiables ;
+  \item un \textbf{agent IA, Jannet}, qui répond aux clients, crée des tickets, anime une réunion vocale autour de l'audit et exécute des actions d'administration ;
+  \item un ensemble d'outils de \textbf{collaboration et de gestion} : tickets Kanban, messagerie d'équipe, notifications, crédits, packs et console d'administration.
+\end{itemize}
+
+Les objectifs mesurables que nous nous sommes fixés sont les suivants : produire un audit complet sans intervention humaine, fournir pour chaque audit une liste de corrections priorisée et un plan d'action, permettre à l'utilisateur de vérifier une correction sans relancer d'audit complet, et proposer l'ensemble dans les trois langues de la clientèle. \todo{faire valider ces objectifs par l'encadrant}
+
+\section{Méthodologie de conduite du projet}
+
+\subsection{Méthodes de gestion de projet}
+Avant de choisir, nous avons comparé les principales approches envisageables pour un développement de cette taille mené par une seule personne. Le \cref{tab-methodologies} en donne une synthèse.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Comparaison des approches de gestion de projet envisagées}\label{tab-methodologies}
+\begin{tabularx}{\textwidth}{@{}lXXX@{}}
+\toprule
+\textbf{Approche} & \textbf{Principe} & \textbf{Avantages} & \textbf{Limites pour ce projet}\\
+\midrule
+Cycle en cascade (V) & Phases séquentielles : spécification, conception, développement, test & Documentation complète, planning lisible & Les besoins évoluent en cours de route ; un retour tardif coûte cher\\
+Scrum & Itérations courtes (sprints), backlog priorisé, revues et rétrospectives \cite{scrumguide} & Adaptation aux changements, livraisons régulières & Prévu pour une équipe ; certains rôles et cérémonies doivent être allégés\\
+Kanban & Flux continu, limitation du travail en cours \cite{anderson2010kanban} & Très souple, adapté à la maintenance & Peu de cadence imposée, risque de dispersion\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Choix de la méthodologie}
+Nous avons retenu une démarche \textbf{itérative inspirée de Scrum}. Ce choix s'explique par trois raisons.
+
+La première est l'incertitude du domaine. La visibilité dans les moteurs génératifs est un sujet récent, sans méthode de mesure établie ; les indicateurs AEO et GEO ont été affinés au fil des retours de l'encadrant et des essais sur des sites réels. Fonctionner par itérations permettait de revoir ces choix à chaque point de suivi.
+
+La deuxième est la nature du travail. Une développeuse unique n'a ni équipe à coordonner ni \textit{Product Owner} distinct. Nous avons donc conservé de Scrum ce qui structure le travail (backlog priorisé, sprints à objectif clair, rétrospective) et laissé de côté ce qui suppose plusieurs personnes. L'encadrant en entreprise a joué le rôle de représentant du métier, en validant l'objectif de chaque sprint et en testant les livraisons.
+
+La troisième est la livraison continue. L'application a été déployée sur le serveur de production dès les premières semaines, et chaque fonctionnalité terminée y a été publiée automatiquement par GitHub Actions. Cela a permis de tester la plateforme sur de vrais sites, avec les vraies contraintes de réseau.
+
+Nous avons organisé la réalisation en quatre sprints, précédés d'un sprint~0 d'analyse et de conception :
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Découpage du projet en sprints}\label{tab-sprints}
+\begin{tabularx}{\textwidth}{@{}llX@{}}
+\toprule
+\textbf{Sprint} & \textbf{Thème} & \textbf{Objectif}\\
+\midrule
+0 & Analyse et conception & Étude de l'existant, besoins, acteurs, modèle de données, architecture, maquettes\\
+1 & Socle, comptes et accès & Projet FastAPI et Next.js, CI/CD, inscription, vérification, connexion, rôles, administration\\
+2 & Moteur d'audit SEO & Crawl, analyse de page, scoring, audits Pro et e-commerce, jobs asynchrones, PageSpeed, GSC, historique, comparateur, export PDF\\
+3 & Visibilité IA et plan d'action & Scores AEO/GEO, présence dans les réponses des LLM, plan d'action 14 jours, optimisation de contenu, checklist de corrections\\
+4 & Jannet, collaboration et monétisation & Agent Jannet (support, réunion vocale, agent admin), tickets Kanban, messagerie d'équipe, notifications, crédits, packs, paiement, internationalisation\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Le planning prévisionnel (\cref{tab-planning}) s'étale sur vingt-quatre semaines, du 2~février au 26~juillet~2026, en quatre phases jalonnées par un livrable. \todo{confirmer les dates réelles de début et de fin du stage ; le dépôt contient des commits dès novembre 2025, préciser si une partie du socle a été réalisée avant le stage}
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Planning prévisionnel par phase}\label{tab-planning}
+\begin{tabularx}{\textwidth}{@{}lXll@{}}
+\toprule
+\textbf{Phase} & \textbf{Contenu} & \textbf{Période} & \textbf{Jalon}\\
+\midrule
+P1 & Étude et conception : besoins, cahier des charges, UML, maquettes, architecture & 02/02 -- 27/02/2026 & Rapport de conception\\
+P2 & Développement du socle : authentification, modèles, tableau de bord, audit de la page d'accueil, scoring & 02/03 -- 10/04/2026 & MVP audit (06/04)\\
+P3 & Modules métier et IA : audit Pro, e-commerce, visibilité IA, plan d'action, corrections, crédits, administration, i18n & 06/04 -- 19/06/2026 & Version bêta (15/06)\\
+P4 & Tests, déploiement, documentation, rapport et soutenance & 22/06 -- 17/07/2026 & Soutenance (13/07)\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\figmanquante{fig-gantt}{Diagramme de Gantt du projet}{Insérer une capture du fichier Xapp\_Gantt\_PFE\_2026.xlsx (généré par tools/generate\_xapp\_gantt.py) montrant les 4 phases sur 24 semaines.}
+
+Le dépôt Git compte 479 commits entre novembre~2025 et juillet~2026 (\cref{fig-git-commits}). \todo{vérifier ce chiffre sur le dépôt final et l'expliquer par rapport aux dates du stage}
+
+\figmanquante{fig-git-commits}{Extrait de l'historique des commits du dépôt sur GitHub}{Capturer la page « Commits » du dépôt xweb-tn/xapp sur GitHub (ou le graphe « Insights > Contributors »).}
+
+\section{Conclusion}
+Ce chapitre a présenté l'agence, les outils d'audit existants et leurs limites pour une clientèle tunisienne. Il a posé la problématique de l'automatisation de l'audit et de la mesure de la visibilité IA, et justifié le recours à une démarche itérative légère. Le chapitre suivant traduit ce cadrage en besoins précis.

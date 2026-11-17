@@ -1,0 +1,132 @@
+\chapter{Déploiement, sécurité, validation et limites}\label{chap-deploiement}
+
+\section{Introduction}
+Ce dernier chapitre rassemble ce qui concerne l'exploitation de la plateforme : la manière dont elle est déployée, les mesures de sécurité en place, la méthode de validation et, point que nous jugeons essentiel dans un rapport honnête, les limites connues de la solution.
+
+\section{Déploiement}
+
+\subsection{Environnements}
+En développement, deux processus tournent sur le poste : le serveur Next.js (port~3000) et l'API FastAPI lancée par Uvicorn (port~8000), avec une base SQLite locale. En production, la même base de code utilise PostgreSQL, désignée par la variable \code{DATABASE\_URL} ; le front est compilé puis servi par PM2, l'API est un service systemd, et Nginx route les requêtes entre les deux.
+
+\subsection{Chaîne de déploiement continu}
+Chaque push sur la branche \code{main} déclenche un workflow GitHub Actions qui se connecte au serveur en SSH et exécute les étapes suivantes :
+\begin{enumerate}
+  \item récupération du code et alignement sur \code{origin/main} ;
+  \item activation du mode maintenance, avec une instruction \code{trap} qui garantit sa désactivation même si une étape échoue ;
+  \item installation des dépendances Python et redémarrage du service de l'API, puis contrôle de la route \route{/health} ;
+  \item reconstruction du front \emph{uniquement} si des fichiers du front ont changé depuis la dernière compilation réussie, dont l'identifiant de commit est conservé dans un fichier \code{.built\_sha} ; en cas d'échec de compilation, l'ancienne version reste en service ;
+  \item rechargement de PM2 et désactivation du mode maintenance.
+\end{enumerate}
+Un second workflow, déclenché manuellement, applique un durcissement de la configuration Nginx et systemd (délais, nombre de travailleurs, adresses Cloudflare) mis au point lors des incidents 522.
+
+Les secrets (chaîne de connexion à la base, clé de signature des jetons, clés OpenAI et Groq, identifiants Flouci et SMTP, accès au serveur) ne sont jamais versionnés : ils sont lus depuis un fichier d'environnement sur le serveur ou stockés comme secrets GitHub. \todo{vérifier qu'aucun secret ni mot de passe par défaut ne figure dans le dépôt (README, scripts, fichiers de test) ; les renouveler si c'est le cas avant de rendre le dépôt accessible au jury}
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Variables d'environnement de l'API (valeurs non reproduites)}\label{tab-env}
+\begin{tabularx}{\textwidth}{@{}p{4.6cm}X@{}}
+\toprule
+\textbf{Variable} & \textbf{Rôle}\\
+\midrule
+\code{DATABASE\_URL} & Connexion à PostgreSQL (SQLite par défaut en développement)\\
+\code{SECRET\_KEY} & Secret de signature des jetons JWT\\
+\code{OPENAI\_API\_KEY}, \code{GROQ\_API\_KEY}, \code{GEMINI\_API\_KEY} & Fournisseurs de modèles de langage\\
+\code{FLOUCI\_APP\_TOKEN}, \code{FLOUCI\_APP\_SECRET} & Passerelle de paiement\\
+\code{SMTP\_*} & Serveur de messagerie\\
+Variables Google & PageSpeed Insights, OAuth Search Console, reCAPTCHA\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Sécurité}
+
+\subsection{Mesures en place}
+\begin{table}[htbp]
+\centering
+\small
+\caption{Mesures de sécurité implémentées}\label{tab-securite}
+\begin{tabularx}{\textwidth}{@{}p{3.2cm}X@{}}
+\toprule
+\textbf{Domaine} & \textbf{Mesure}\\
+\midrule
+Authentification & Mots de passe hachés (bcrypt) ; jetons JWT signés valables 24~h ; vérification d'adresse par code ; reCAPTCHA à l'inscription ; réinitialisation en deux étapes (code puis jeton)\\
+Autorisation & Utilisateur relu en base à chaque requête ; dépendances par type de route ; actions critiques réservées au super admin ; fonctionnalités payantes vérifiées côté serveur\\
+Agent IA & Outils déclarés uniquement ; actions mutantes réservées au super admin, journalisées et annulables\\
+Origines & Liste explicite des origines autorisées (CORS) : domaines de production et poste local\\
+Transport & HTTPS imposé par Nginx, certificats Let's Encrypt, Cloudflare en frontal\\
+Secrets & Hors dépôt ; aucune clé exposée au navigateur, tous les appels aux fournisseurs passent par le serveur\\
+Données tierces & Portée OAuth en lecture seule pour Search Console\\
+Exploitation & Mode maintenance pendant les déploiements, route de santé\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Limites de sécurité connues}
+Nous préférons les énoncer plutôt que de les laisser découvrir par le jury. Elles constituent le programme de renforcement le plus évident.
+
+\begin{enumerate}
+  \item \textbf{Jeton dans le stockage local.} Le jeton est stocké dans le navigateur, accessible à un script injecté en cas de faille XSS. Un cookie \code{HttpOnly} avec une protection contre la falsification de requête serait plus sûr.
+  \item \textbf{Pas de limitation de débit applicative.} Aucune limitation du nombre de tentatives n'est appliquée par l'API aux routes de connexion ou de réinitialisation. \todo{vérifier si Cloudflare ou Nginx appliquent une limitation ; sinon conserver ce point}
+  \item \textbf{Codes en clair.} Les codes de vérification et de réinitialisation sont enregistrés tels quels ; les stocker sous forme de condensat limiterait l'impact d'une fuite de la base.
+  \item \textbf{Requêtes sortantes vers des URL saisies.} Le moteur télécharge des URL fournies par l'utilisateur ; sans filtrage des adresses internes, un utilisateur malveillant pourrait viser le réseau local du serveur (SSRF) \cite{owasptop10}. \todo{vérifier si les adresses privées et localhost sont filtrées par le contrôle d'éligibilité}
+  \item \textbf{Injection de consigne.} Le contenu d'un site audité ou un message de client peut tenter de détourner le modèle de langage. Les consignes système contiennent des garde-fous, et l'agent d'administration ne peut appeler que des outils déclarés, mais ces protections n'ont pas été éprouvées systématiquement.
+\end{enumerate}
+
+\section{Validation}
+
+\subsection{Méthode}
+\todo{décrire précisément les tests réellement effectués : le dépôt contient-il des tests automatisés (pytest, tests front) ? sinon le reconnaître ici comme dans la suite du paragraphe}
+La validation s'est faite principalement de trois manières :
+\begin{itemize}
+  \item \textbf{tests manuels} par scénario, pendant le développement, avec des comptes de test de chaque rôle et des sites de démonstration (par exemple \code{quotes.toscrape.com}) ;
+  \item \textbf{utilisation en production}, la plateforme étant déployée dès le début, ce qui a permis de corriger les défauts liés au réseau réel (délais, Cloudflare, sites protégés) ;
+  \item \textbf{relecture du code} lors des corrections de défauts, dont l'historique Git garde la trace.
+\end{itemize}
+Les scénarios ci-dessous ont servi de trame de validation.
+
+\subsection{Scénarios de validation}
+\begin{table}[htbp]
+\centering
+\small
+\caption{Scénarios de validation fonctionnelle}\label{tab-scenarios}
+\begin{tabularx}{\textwidth}{@{}lXXl@{}}
+\toprule
+\textbf{N\textsuperscript{o}} & \textbf{Scénario} & \textbf{Résultat attendu} & \textbf{Statut}\\
+\midrule
+T1 & Inscription avec une adresse déjà utilisée & Refus, aucun compte créé & \todo{à rejouer}\\
+T2 & Saisie d'un code de vérification expiré & Refus, possibilité de renvoyer un code & \todo{à rejouer}\\
+T3 & Appel d'une route avec un jeton expiré ou falsifié & Erreur 401, retour à la connexion & \todo{à rejouer}\\
+T4 & Un client appelle une route d'administration & Erreur 403 & \todo{à rejouer}\\
+T5 & Client Free qui lance une visibilité IA & Refus, invitation à passer Pro & \todo{à rejouer}\\
+T6 & Audit lancé sans crédit & Refus, aucun job créé & \todo{à rejouer}\\
+T7 & Audit Pro d'un site de plus de 100 pages & Job asynchrone, progression affichée, résultat enregistré & \todo{à rejouer}\\
+T8 & Audit d'un site inaccessible & Job \code{failed}, crédit remboursé une seule fois & \todo{à rejouer}\\
+T9 & Correction de \code{robots.txt} puis « Vérifier » & Élément passé à \code{fixed} & \todo{à rejouer}\\
+T10 & Visibilité IA avec un fournisseur indisponible & Les autres moteurs s'affichent, erreur explicite & \todo{à rejouer}\\
+T11 & Manager demandant à Jannet d'ajouter des crédits & Refus (action réservée au super admin) & \todo{à rejouer}\\
+T12 & Annulation d'une action de Jannet & Crédits et lots retirés & \todo{à rejouer}\\
+\bottomrule
+\end{tabularx}
+\end{table}
+\todo{rejouer chaque scénario sur la plateforme déployée, remplacer « à rejouer » par OK ou KO, et joindre une capture ou une trace pour les cas les plus parlants (T4, T8, T11)}
+
+\subsection{Mesures de performance}
+\todo{mesurer sur la plateforme déployée la durée d'un audit de la page d'accueil et d'un audit Pro de 100 pages sur deux ou trois sites, le temps de réponse de trois routes représentatives (connexion, historique, statut de job) et faire un audit Lighthouse de la page d'accueil de Xapp ; ne reporter que des valeurs réellement mesurées}
+
+\section{Limites de la solution}
+
+\paragraph{Un audit lourd à la fois.} L'exécuteur intégré traite les jobs l'un après l'autre pour protéger le serveur. Sous forte charge, la file d'attente s'allonge. Une file de messages (Redis et Celery ou RQ) avec plusieurs travailleurs permettrait de monter en charge.
+
+\paragraph{Un seul serveur.} L'API, le front, la base et l'exécuteur partagent la même machine ; les notifications WebSocket sont gérées en mémoire. Plusieurs instances exigeraient un bus partagé et une base séparée.
+
+\paragraph{Dépendance aux fournisseurs d'IA.} Le plan d'action, la présence dans les réponses, Jannet et la voix reposent sur des API externes payantes, soumises à des quotas et à des changements de modèles. Les réponses des modèles varient : le test de présence est un instantané.
+
+\paragraph{Scores empiriques.} Les barèmes SEO, AEO et GEO ont été fixés à partir des bonnes pratiques et d'essais ; ils n'ont pas été calibrés statistiquement sur un échantillon de sites.
+
+\paragraph{Fonctionnalités partielles.} Le paiement par Konnect et Stripe reste en mode test ; le suivi des positions et le suivi de la visibilité IA dans le temps ne sont pas réalisés.
+
+\paragraph{Sauvegardes.} \todo{indiquer la politique de sauvegarde de la base PostgreSQL et des fichiers téléversés (fréquence, emplacement), ou reconnaître son absence}
+
+\section{Conclusion}
+La plateforme est déployée et utilisable, avec une chaîne de mise en production automatisée. Les limites de sécurité et d'échelle sont connues et classées ; elles nourrissent les perspectives présentées dans la conclusion générale.

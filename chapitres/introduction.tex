@@ -1,0 +1,22 @@
+\chapter*{Introduction générale}
+\addcontentsline{toc}{chapter}{Introduction générale}
+\markboth{Introduction générale}{Introduction générale}
+
+Pour une petite entreprise tunisienne, avoir un site web ne suffit plus. Encore faut-il que ce site soit trouvé. Pendant vingt ans, cela voulait dire apparaître dans la première page de Google ; aujourd'hui, une part croissante des internautes pose directement sa question à un assistant conversationnel comme ChatGPT, Perplexity ou Gemini, qui répond par un texte de synthèse et ne cite que quelques sources. Un site peut donc être bien référencé au sens classique et rester invisible dans ces nouvelles réponses. \todo{ajouter une statistique sourcée et datée sur la part des recherches passant par les assistants IA, ou supprimer cette phrase}
+
+C'est dans ce contexte que s'inscrit mon stage chez \organisme, agence tunisienne de conception d'applications web et de référencement naturel. Une partie du travail de l'agence consiste à auditer les sites de ses clients : vérifier les balises, la structure, la vitesse, l'indexation, puis rédiger des recommandations. Ce travail est long, répétitif, et il repose sur des outils étrangers coûteux qui ne disent rien de la visibilité d'un site dans les moteurs génératifs.
+
+Mon projet de fin d'études consiste à automatiser ce travail dans une plateforme \gls{saas}, \xapp{} (aussi appelée SEOtunisie au début du projet). Un utilisateur y saisit l'adresse de son site ; la plateforme parcourt ses pages, calcule un score \gls{seo} détaillé, évalue sa visibilité dans les moteurs de réponse (\gls{aeo}) et génératifs (\gls{geo}), interroge en direct des modèles de langage pour vérifier s'ils citent le site, puis produit un plan d'action sur quatorze jours et une liste de corrections que la plateforme sait revérifier. Autour de ce cœur, \xapp{} propose un assistant conversationnel (Jannet), un support par tickets, une messagerie d'équipe, un système de crédits et une console d'administration, dans une interface disponible en français, en anglais et en arabe.
+
+Ce projet pose des questions techniques qui dépassent une application de gestion classique : parcourir un site inconnu sans le surcharger ni dépasser les délais d'un serveur mandataire, exécuter des traitements longs en arrière-plan, définir des scores reproductibles, et orchestrer des modèles de langage dont les réponses ne sont ni gratuites, ni déterministes, ni toujours disponibles.
+
+Ce rapport retrace la démarche suivie, du cadrage à la mise en production. Il comprend huit chapitres :
+\begin{itemize}
+  \item le \textbf{premier chapitre} présente l'organisme d'accueil, analyse l'existant, formule la problématique et justifie la méthodologie retenue ;
+  \item le \textbf{deuxième chapitre} est consacré à l'analyse des besoins : acteurs, exigences fonctionnelles et non fonctionnelles, cas d'utilisation, backlog et planification ;
+  \item le \textbf{troisième chapitre} expose la conception : choix technologiques, architecture logique et physique, modèle de données et diagrammes de séquence de l'audit ;
+  \item les \textbf{chapitres quatre à sept} détaillent la réalisation sprint par sprint : socle, comptes et contrôle d'accès, moteur d'audit SEO, visibilité IA et plan d'action, puis l'agent Jannet, la collaboration et la monétisation ;
+  \item le \textbf{huitième chapitre} traite du déploiement, de la sécurité, de la validation et des limites actuelles de la solution.
+\end{itemize}
+
+Une conclusion générale dresse enfin le bilan du projet, ce qu'il m'a apporté et les évolutions envisagées.

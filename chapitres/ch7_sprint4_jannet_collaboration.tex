@@ -1,0 +1,136 @@
+\chapter{Sprint 4 : Jannet, collaboration et monétisation}
+
+\section{Introduction}
+Le dernier sprint de développement regroupe trois ensembles. Le premier est Jannet, un agent conversationnel qui accompagne les clients (support, réunion vocale autour de l'audit) et les administrateurs (actions sur la plateforme). Le deuxième est l'outillage de l'équipe : tickets au format Kanban, messagerie interne, notifications en temps réel. Le troisième est le modèle économique : crédits, packs et paiement en ligne, ainsi que l'internationalisation de l'interface.
+
+\section{Backlog du sprint}
+\begin{table}[htbp]
+\centering
+\small
+\caption{Backlog du sprint 4}\label{tab-backlog-s4}
+\begin{tabularx}{\textwidth}{@{}lXl@{}}
+\toprule
+\textbf{Réf.} & \textbf{Tâche} & \textbf{État}\\
+\midrule
+S4.1 & Jannet support : réponses contextualisées, base de connaissances, création de ticket confirmée & Terminé\\
+S4.2 & Réunion vocale avec Jannet autour d'un audit (transcription, synthèse vocale, compte rendu PDF) & Terminé\\
+S4.3 & Jannet agent d'administration : outils, restrictions par rôle, journal et annulation & Terminé\\
+S4.4 & Tickets de support : création, échanges, tableau Kanban, statistiques & Terminé\\
+S4.5 & Messagerie d'équipe : canal général, messages privés, images, non-lus & Terminé\\
+S4.6 & Notifications persistées et poussées par WebSocket & Terminé\\
+S4.7 & FAQ et page d'aide & Terminé\\
+S4.8 & Crédits FIFO avec expiration, packs, produits & Terminé\\
+S4.9 & Paiement Flouci ; Konnect et Stripe en mode test & Partiel\\
+S4.10 & Interface trilingue FR/EN/AR avec RTL & Terminé\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Jannet, assistante du client}
+
+\subsection{Support conversationnel}
+Depuis la page d'aide, le client peut consulter une FAQ (\cref{fig-faq}) ou discuter avec Jannet. À chaque message, le serveur construit un contexte : profil du client, plan, solde de crédits, derniers audits et scores, ainsi que les entrées de la base de connaissances les plus proches de la question. Le modèle de langage (servi par Groq, avec plusieurs modèles en repli) répond en tenant compte de ce contexte. Quand la question dépasse ce que Jannet peut résoudre, elle propose de créer un ticket ; le ticket n'est créé qu'après confirmation explicite du client (\cref{fig-jannet-support}).
+
+\fig[0.95]{figures/captures/faq_aide.png}{Page d'aide : questions fréquentes}{fig-faq}
+\source{capture d'écran de l'application}
+
+\fig[0.7]{figures/captures/jannet_support.png}{Jannet propose la création d'un ticket de support}{fig-jannet-support}
+\source{capture d'écran de l'application}
+
+La base de connaissances s'enrichit à l'usage : lorsqu'un ticket est résolu, ses échanges peuvent être résumés par le modèle en une paire question-réponse, enregistrée dans \code{knowledge\_entries}. Les administrateurs peuvent aussi ajouter ou supprimer des entrées.
+
+\subsection{Réunion vocale autour de l'audit}
+Pour les clients qui préfèrent parler plutôt que lire un rapport, Jannet propose une réunion vocale (\cref{fig-jannet-reunion}). Le client choisit une voix et une langue ; Jannet ouvre la séance avec un résumé de l'audit, puis répond aux questions :
+\begin{itemize}
+  \item la parole du client est transcrite par le modèle Whisper (\code{whisper-large-v3}) servi par Groq (\gls{stt}) ;
+  \item la réponse est générée par le modèle de langage à partir du contexte de l'audit, avec une consigne de concision ;
+  \item elle est lue à voix haute par synthèse vocale (\gls{tts}) : voix OpenAI quand elle est disponible, sinon voix neuronales edge-tts en repli.
+\end{itemize}
+À la fin de la séance, la conversation est résumée et un compte rendu PDF signé est produit.
+
+\fig[0.75]{figures/captures/jannet_reunion.png}{Réunion vocale avec Jannet}{fig-jannet-reunion}
+\source{capture d'écran de l'application}
+
+\section{Jannet, agent d'administration}
+
+\subsection{Principe}
+Côté administration, Jannet n'est plus seulement une interlocutrice : c'est un agent qui peut agir sur la plateforme. L'administrateur écrit en langage naturel (« ajoute 10 crédits SEO à tel client », « liste les tickets urgents ») ; le modèle répond par un objet JSON désignant un outil et ses paramètres, le serveur exécute l'outil et renvoie le résultat au modèle, qui le reformule. Le modèle ne touche jamais directement à la base : il ne peut qu'appeler les outils déclarés (\cref{tab-outils-jannet}).
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Outils mis à disposition de l'agent Jannet}\label{tab-outils-jannet}
+\begin{tabularx}{\textwidth}{@{}p{4.2cm}Xc@{}}
+\toprule
+\textbf{Outil} & \textbf{Rôle} & \textbf{Mutant}\\
+\midrule
+\code{list\_users}, \code{get\_user} & Rechercher et consulter des comptes & Non\\
+\code{create\_user} & Créer un compte client & Oui\\
+\code{add\_credits} & Ajouter des crédits SEO, IA ou Pro & Oui\\
+\code{check\_eligibility} & Tester si un site peut être audité & Non\\
+\code{list\_tickets} & Lister les tickets par statut & Non\\
+\code{update\_ticket\_status} & Changer le statut d'un ticket & Oui\\
+\code{search\_kb} & Chercher dans la base de connaissances & Non\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Garde-fous}
+Trois mécanismes encadrent l'agent :
+\begin{enumerate}
+  \item \textbf{restriction par rôle} : les outils mutants ne sont exécutés que pour un super admin ; un manager peut consulter mais pas modifier par l'intermédiaire de l'agent ;
+  \item \textbf{journalisation} : chaque action mutante réussie est enregistrée dans \code{agent\_actions} avec ses paramètres, son résultat et les données nécessaires à son annulation ;
+  \item \textbf{annulation} : l'administrateur peut annuler une action précise ou la dernière action (suppression du compte créé, retrait des crédits et des lots ajoutés, restauration de l'ancien statut d'un ticket).
+\end{enumerate}
+
+\fig[0.75]{figures/captures/jannet_admin.png}{Jannet exécute une action d'administration}{fig-jannet-admin}
+\source{capture d'écran de l'application}
+
+\section{Tickets et tableau Kanban}
+Un ticket comporte un sujet, une description, une catégorie (général, technique, facturation, bogue), une priorité (basse à urgente) et un statut (\code{todo}, \code{in\_progress}, \code{resolved}, \code{closed}). À sa création, les administrateurs reçoivent une notification et le client un courriel de confirmation. Les échanges se font dans le ticket ; un ticket fermé n'accepte plus de message. Côté équipe, les tickets sont présentés sur un tableau Kanban où l'on change le statut par glisser-déposer, l'ordre dans chaque colonne étant conservé (\cref{fig-kanban}).
+
+\fig[0.98]{figures/captures/kanban.png}{Tableau Kanban des tickets}{fig-kanban}
+\source{capture d'écran de l'application}
+
+\section{Messagerie d'équipe et notifications}
+La messagerie interne relie le super admin et les managers : un canal général, synchronisé automatiquement avec la liste des membres de l'équipe, et des conversations privées. Les messages peuvent contenir des images ; un compteur de non-lus est calculé à partir du dernier message lu par chaque membre (\cref{fig-chat}).
+
+\fig[0.98]{figures/captures/chat_equipe.png}{Messagerie de l'équipe}{fig-chat}
+\source{capture d'écran de l'application}
+
+Les notifications sont enregistrées en base puis poussées immédiatement par une connexion WebSocket authentifiée par le jeton (\route{/ws/notifications}) si le destinataire est connecté. Une cloche dans l'interface affiche le nombre de notifications non lues.
+
+\section{Crédits, packs et paiement}
+\subsection{Crédits en lots FIFO}
+Chaque action payante consomme un type de crédit : SEO pour les audits, IA pour la visibilité IA et l'optimisation, Pro pour des crédits universels. Un achat crée un lot (\code{CreditBatch}) valable six mois par défaut. À la consommation, le service débite d'abord le lot non expiré le plus ancien, puis le suivant ; si les crédits spécifiques manquent, les crédits Pro sont utilisés. Une tâche d'expiration retire les lots périmés et met à jour le solde affiché.
+
+\begin{lstlisting}[language=Python,caption={Sélection des lots à débiter (extrait simplifié)},label={lst-fifo}]
+batches = db.query(CreditBatch).filter(
+    CreditBatch.user_id == user.id,
+    CreditBatch.credit_type == credit_type,
+    CreditBatch.remaining_amount > 0,
+    CreditBatch.expires_at > now,
+).order_by(CreditBatch.created_at.asc()).all()
+\end{lstlisting}
+
+\subsection{Packs et paiement}
+Les packs (par exemple Silver, Gold, Platinum) regroupent des crédits et des fonctionnalités (analyse complète, visibilité IA, plan d'action, export PDF, support prioritaire). Ils sont configurés depuis l'administration. Le paiement passe par Flouci, passerelle tunisienne qui permet de payer en dinars : la plateforme crée la transaction, redirige le client, puis vérifie le paiement avant d'ajouter les crédits. Konnect et Stripe sont préparés mais fonctionnent en mode test. \todo{préciser si le paiement Flouci est actif en production avec de vrais paiements, et indiquer les prix des packs validés par l'agence}
+
+\figmanquante{fig-upgrade}{Page d'achat de packs}{Capturer /dashboard/upgrade avec les packs proposés et, si possible, la page de paiement Flouci en mode test.}
+
+\section{Internationalisation}
+L'interface est disponible en français, anglais et arabe grâce à next-intl. Les textes sont centralisés dans trois fichiers de messages de même structure ; la page d'accueil existe en trois versions (\route{/}, \route{/en}, \route{/ar}) et la mise en page bascule de droite à gauche pour l'arabe. \todo{ajouter une capture de la page d'accueil ou du tableau de bord en arabe (RTL)}
+
+\section{Bilan du sprint}
+\subsection{Livrables}
+Jannet (support, réunion vocale, agent d'administration), les tickets, la messagerie, les notifications, le système de crédits et l'interface trilingue sont en production ; le paiement est partiellement finalisé.
+
+\subsection{Rétrospective}
+\begin{description}[leftmargin=1.2em,style=nextline]
+  \item[Ce qui a bien fonctionné.] Limiter l'agent à des outils déclarés, avec journal et annulation, a rendu acceptable l'idée de confier des actions réelles à un modèle de langage.
+  \item[Ce qui a posé problème.] Le modèle produit parfois un JSON invalide ou entouré de texte ; il a fallu une extraction robuste et des modèles de repli. La configuration du paiement réel dépend de démarches administratives extérieures au développement.
+  \item[À améliorer.] Les notifications par WebSocket sont gérées en mémoire par un seul processus ; plusieurs instances exigeraient un bus partagé. La confirmation avant chaque action mutante de l'agent pourrait être rendue systématique.
+\end{description}
+
+\section{Conclusion}
+Ce sprint complète la plateforme par l'accompagnement, la collaboration et la monétisation. Le chapitre suivant traite de son exploitation : déploiement, sécurité, validation et limites.

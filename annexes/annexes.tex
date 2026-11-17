@@ -1,0 +1,59 @@
+\chapter{Compléments techniques}
+
+\section{Liste des routes de l'API par domaine}
+Le \cref{tab-routes} donne une vue synthétique des domaines de l'API REST. La documentation interactive complète est générée par FastAPI (Swagger).
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Domaines de l'API REST}\label{tab-routes}
+\begin{tabularx}{\textwidth}{@{}p{3.6cm}X@{}}
+\toprule
+\textbf{Préfixe} & \textbf{Contenu}\\
+\midrule
+\route{/auth} & Inscription, connexion, profil, avatar, changement de mot de passe, vérification d'e-mail, mot de passe oublié (code, vérification, réinitialisation)\\
+\route{/audit} & Audit synchrone, démarrage d'un job, statut d'un job, historique\\
+\route{/api/audit} & Détail d'un audit, suggestion de mots-clés\\
+\route{/api/ai-visibility} & Analyse de visibilité IA, version en flux SSE, optimisation de contenu\\
+\route{/optimize} & Génération du plan d'action\\
+\route{/api/corrections} & Liste, vérification, marquage comme fait, réouverture\\
+\route{/api/gsc} & Connexion OAuth, rappel, statut, inspection d'URL, déconnexion\\
+\route{/api/packs}, \route{/api/payment}, \route{/payments} & Packs, produits, abonnement, création et vérification de paiement, fournisseurs\\
+\route{/export} & Export PDF, liste et suppression des exports\\
+\route{/admin} & Utilisateurs, statistiques, crédits, packs, produits, maintenance, journaux, éligibilité, données de démonstration, courriel de test\\
+\route{/jannet} & Chat de support, confirmation de ticket, agent d'administration, journal et annulation, base de connaissances\\
+\route{/voice} & Voix disponibles, session de réunion vocale, message, fin de séance, transcription\\
+\route{/tickets} & Création, liste, détail, mise à jour, suppression, messages, statistiques\\
+\route{/team-chat} & Canaux, messages, membres, messages privés, envoi d'image, non-lus\\
+\route{/notifications}, \route{/ws/notifications} & Notifications (REST) et canal WebSocket\\
+\bottomrule
+\end{tabularx}
+\end{table}
+\todo{vérifier les préfixes exacts de chaque routeur dans main.py (export, voice, payments, notifications)}
+
+\section{Extrait de code : remboursement d'un job échoué}
+\begin{lstlisting}[language=Python,caption={Remboursement idempotent du crédit d'un job (extrait simplifié)},label={lst-refund}]
+def _refund(db, job):
+    if job.credit_refunded or not job.credit_type_used:
+        return
+    user = db.query(User).filter(User.id == job.user_id).first()
+    CreditService.add_credits(db, user, 1, job.credit_type_used)
+    job.credit_refunded = True
+    db.commit()
+\end{lstlisting}
+\todo{vérifier que l'extrait correspond fidèlement au code de audit\_runner.py}
+
+\section{Extrait de code : restriction des actions de l'agent}
+\begin{lstlisting}[language=Python,caption={Actions mutantes de Jannet réservées au super admin (extrait simplifié)},label={lst-agent}]
+spec = TOOLS[tool_name]
+if spec["mutating"] and admin.is_admin != 1:
+    result = {"error": "Action reservee au Super Admin"}
+else:
+    result = spec["fn"](db, **params)
+\end{lstlisting}
+
+\section{Scénario de démonstration}
+\todo{rédiger ici, en une page, le scénario de démonstration suivi lors de la soutenance (tableau de bord et support, audit SEO, visibilité IA, plan d'action et corrections, réunion vocale avec Jannet, actions d'administration de Jannet, Kanban et messagerie), avec les comptes de test utilisés et la durée de chaque étape}
+
+\section{Manuel utilisateur}
+\todo{si l'encadrant demande un manuel utilisateur (client, manager), l'insérer ici sous forme de quelques pages illustrées de captures, ou le fournir comme livrable séparé et y renvoyer}
